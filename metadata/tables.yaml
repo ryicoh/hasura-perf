@@ -1,0 +1,389 @@
+- table:
+    schema: public
+    name: Organization
+  array_relationships:
+  - name: OrganizationMembers
+    using:
+      foreign_key_constraint_on:
+        column: organization_id
+        table:
+          schema: public
+          name: OrganizationMember
+  - name: Projects
+    using:
+      foreign_key_constraint_on:
+        column: organization_id
+        table:
+          schema: public
+          name: Project
+  select_permissions:
+  - role: user
+    permission:
+      columns:
+      - name
+      - created_at
+      - updated_at
+      - id
+      filter:
+        OrganizationMembers:
+          user_id:
+            _eq: X-Hasura-User-Id
+- table:
+    schema: public
+    name: OrganizationMember
+  object_relationships:
+  - name: Organization
+    using:
+      foreign_key_constraint_on: organization_id
+  - name: User
+    using:
+      foreign_key_constraint_on: user_id
+  select_permissions:
+  - role: user
+    permission:
+      columns:
+      - id
+      - created_at
+      - organization_id
+      - user_id
+      filter:
+        Organization:
+          OrganizationMembers:
+            user_id:
+              _eq: X-Hasura-User-Id
+- table:
+    schema: public
+    name: Project
+  object_relationships:
+  - name: Organization
+    using:
+      foreign_key_constraint_on: organization_id
+  - name: Visibility
+    using:
+      foreign_key_constraint_on: visibility
+  array_relationships:
+  - name: ProjectMembers
+    using:
+      foreign_key_constraint_on:
+        column: project_id
+        table:
+          schema: public
+          name: ProjectMember
+  - name: Tasks
+    using:
+      foreign_key_constraint_on:
+        column: project_id
+        table:
+          schema: public
+          name: Task
+  select_permissions:
+  - role: user
+    permission:
+      columns:
+      - id
+      - created_at
+      - updated_at
+      - name
+      - organization_id
+      - visibility
+      filter:
+        _or:
+        - visibility:
+            _eq: Public
+        - visibility:
+            _eq: OrganizationMemberOnly
+          Organization:
+            OrganizationMembers:
+              user_id:
+                _eq: X-Hasura-User-Id
+        - visibility:
+            _eq: ProjectMemberOnly
+          ProjectMembers:
+            user_id:
+              _eq: X-Hasura-User-Id
+- table:
+    schema: public
+    name: ProjectMember
+  object_relationships:
+  - name: Project
+    using:
+      foreign_key_constraint_on: project_id
+  - name: User
+    using:
+      foreign_key_constraint_on: user_id
+  select_permissions:
+  - role: user
+    permission:
+      columns:
+      - id
+      - created_at
+      - updated_at
+      - project_id
+      - user_id
+      filter:
+        _or:
+        - user_id:
+            _eq: X-Hasura-User-Id
+        - Project:
+            _or:
+            - visibility:
+                _eq: Public
+            - visibility:
+                _eq: OrganizationMemberOnly
+              Organization:
+                OrganizationMembers:
+                  user_id:
+                    _eq: X-Hasura-User-Id
+- table:
+    schema: public
+    name: SubTask
+  object_relationships:
+  - name: Task
+    using:
+      foreign_key_constraint_on: task_id
+  array_relationships:
+  - name: SubTaskAssignees
+    using:
+      foreign_key_constraint_on:
+        column: sub_task_id
+        table:
+          schema: public
+          name: SubTaskAssignee
+  select_permissions:
+  - role: user
+    permission:
+      columns:
+      - id
+      - created_at
+      - updated_at
+      - task_id
+      - name
+      - body
+      filter:
+        _or:
+        - Task:
+            _or:
+            - Project:
+                _or:
+                - visibility:
+                    _eq: Public
+                - visibility:
+                    _eq: OrganizationMemberOnly
+                  Organization:
+                    OrganizationMembers:
+                      user_id:
+                        _eq: X-Hasura-User-Id
+                - visibility:
+                    _eq: ProjectMemberOnly
+                  ProjectMembers:
+                    user_id:
+                      _eq: X-Hasura-User-Id
+            - TaskAssignees:
+                user_id:
+                  _eq: X-Hasura-User-Id
+        - SubTaskAssignees:
+            user_id:
+              _eq: X-Hasura-User-Id
+- table:
+    schema: public
+    name: SubTaskAssignee
+  object_relationships:
+  - name: SubTask
+    using:
+      foreign_key_constraint_on: sub_task_id
+  - name: User
+    using:
+      foreign_key_constraint_on: user_id
+  select_permissions:
+  - role: user
+    permission:
+      columns:
+      - id
+      - created_at
+      - updated_at
+      - sub_task_id
+      - user_id
+      filter:
+        _or:
+        - SubTask:
+            Task:
+              _or:
+              - Project:
+                  _or:
+                  - visibility:
+                      _eq: Public
+                  - visibility:
+                      _eq: OrganizationMemberOnly
+                    Organization:
+                      OrganizationMembers:
+                        user_id:
+                          _eq: X-Hasura-User-Id
+                  - visibility:
+                      _eq: ProjectMemberOnly
+                    ProjectMembers:
+                      user_id:
+                        _eq: X-Hasura-User-Id
+              - TaskAssignees:
+                  user_id:
+                    _eq: X-Hasura-User-Id
+        - user_id:
+            _eq: X-Hasura-User-Id
+- table:
+    schema: public
+    name: Task
+  object_relationships:
+  - name: Project
+    using:
+      foreign_key_constraint_on: project_id
+  array_relationships:
+  - name: SubTasks
+    using:
+      foreign_key_constraint_on:
+        column: task_id
+        table:
+          schema: public
+          name: SubTask
+  - name: TaskAssignees
+    using:
+      foreign_key_constraint_on:
+        column: task_id
+        table:
+          schema: public
+          name: TaskAssignee
+  select_permissions:
+  - role: user
+    permission:
+      columns:
+      - id
+      - created_at
+      - updated_at
+      - project_id
+      - name
+      - body
+      filter:
+        _or:
+        - Project:
+            _or:
+            - visibility:
+                _eq: Public
+            - visibility:
+                _eq: OrganizationMemberOnly
+              Organization:
+                OrganizationMembers:
+                  user_id:
+                    _eq: X-Hasura-User-Id
+            - visibility:
+                _eq: ProjectMemberOnly
+              ProjectMembers:
+                user_id:
+                  _eq: X-Hasura-User-Id
+        - TaskAssignees:
+            user_id:
+              _eq: X-Hasura-User-Id
+- table:
+    schema: public
+    name: TaskAssignee
+  object_relationships:
+  - name: Task
+    using:
+      foreign_key_constraint_on: task_id
+  - name: User
+    using:
+      foreign_key_constraint_on: user_id
+  select_permissions:
+  - role: user
+    permission:
+      columns:
+      - id
+      - created_at
+      - updated_at
+      - task_id
+      - user_id
+      filter:
+        _or:
+        - Task:
+            Project:
+              _or:
+              - visibility:
+                  _eq: Public
+              - visibility:
+                  _eq: OrganizationMemberOnly
+                Organization:
+                  OrganizationMembers:
+                    user_id:
+                      _eq: X-Hasura-User-Id
+              - visibility:
+                  _eq: ProjectMemberOnly
+                ProjectMembers:
+                  user_id:
+                    _eq: X-Hasura-User-Id
+        - user_id:
+            _eq: X-Hasura-User-Id
+- table:
+    schema: public
+    name: User
+  array_relationships:
+  - name: OrganizationMembers
+    using:
+      foreign_key_constraint_on:
+        column: user_id
+        table:
+          schema: public
+          name: OrganizationMember
+  - name: ProjectMembers
+    using:
+      foreign_key_constraint_on:
+        column: user_id
+        table:
+          schema: public
+          name: ProjectMember
+  - name: SubTaskAssignees
+    using:
+      foreign_key_constraint_on:
+        column: user_id
+        table:
+          schema: public
+          name: SubTaskAssignee
+  - name: TaskAssignees
+    using:
+      foreign_key_constraint_on:
+        column: user_id
+        table:
+          schema: public
+          name: TaskAssignee
+  select_permissions:
+  - role: user
+    permission:
+      columns:
+      - id
+      - created_at
+      - updated_at
+      - name
+      filter:
+        _or:
+        - id:
+            _eq: X-Hasura-User-Id
+        - OrganizationMembers:
+            Organization:
+              OrganizationMembers:
+                user_id:
+                  _eq: X-Hasura-User-Id
+- table:
+    schema: public
+    name: Visibility
+  is_enum: true
+  array_relationships:
+  - name: Projects
+    using:
+      foreign_key_constraint_on:
+        column: visibility
+        table:
+          schema: public
+          name: Project
+  select_permissions:
+  - role: user
+    permission:
+      columns:
+      - value
+      - comment
+      filter: {}
