@@ -1,4 +1,4 @@
-This is too a heavy query.
+This query is a simple use case, but too a heavy.(cost=1886261)
 
 ```
 x-hasura-role: user
