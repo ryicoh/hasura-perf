@@ -1,4 +1,4 @@
-This query is a simple use case, but too a heavy.(cost=1886261)
+This query is a simple use case, but too heavy.(cost=1886261)
 
 ```graphql
 # x-hasura-role: user
